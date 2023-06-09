@@ -3,6 +3,10 @@ verde="\e[32m"
 rojo="\e[31m"
 amarillo="\e[33m"
 final="\e[0m"
+if ! [[ -e ~/.referencias.txt ]]
+then
+	touch ~/.referencias.txt
+fi
 
 while getopts pa:e:chd flag
 do
