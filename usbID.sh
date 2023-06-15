@@ -1,52 +1,46 @@
 #!/bin/bash
 
-if [[ "$1" != "-n" ]]; then
-	 $0 -n & disown
-	exit $?
-fi
-
-
-sleep 2
-if ! [[ -e /var/log/log_gl1 ]]
+if ! [[ -e /var/log/log_gl1 ]] #Creación del log
 then
-	echo "Puerto   |         Fecha/hora           | Evento" >> /var/log/log_gl1
-	sleep 1
+	sudo bash -c "echo \"Puerto   |         Fecha/hora           | Evento\" >> /var/log/log_gl1"
+	sudo bash -c "echo \"------------------------------------------------------\" >> /var/log/log_gl1"
+	
 fi
-primeraVez="Si"
-conteoTotal=$(sudo dmesg | grep usb | grep - | grep -c found) 
 
-desconectadoTotal=$(sudo dmesg | grep usb | grep - | grep -c disconnect)
-
-if [ $primeraVez == "Si" ]
+if [ $1 = "-a" ] #Añadir reglas a udev
 then
-	conteoReal=0
-	for (( c=1; c<=$conteoTotal; c++))
-	do
-		echo "Puerto $(sudo dmesg | grep usb | grep - | grep found | cut -d "-" -f 2 | cut -d ":" -f 1 | head -$c | tail -1) |                              | Conexión" >> /var/log/log_gl1
-	done
-	primeraVez="No"
-	sudo dmesg -C
+	sudo echo "KERNEL==\"*-?\", ACTION==\"add\", SUBSYSTEM==\"usb\", DRIVERS==\"usb\", RUN+=\"/home/ian/usb.sh '\$env{ACTION}' '\$kernel'\"" >> /etc/udev/rules.d/60-scriptusbID.rules
+        sudo echo "KERNEL==\"*-?\", ACTION==\"remove\", SUBSYSTEM==\"usb\", DRIVERS==\"usb\", RUN+=\"/home/ian/usb.sh '\$env{ACTION}' '\$kernel'\"" >> /etc/udev/rules.d/60-scriptusbID.rules
+
+	sudo echo "#!/bin/bash" >> /usr/lib/systemd/system-shutdown/usbIDVariable.sh
+	sudo echo "mount -o remount,rw /" >> /usr/lib/systemd/system-shutdown/usbIDVariable.sh
+	sudo echo "echo \"0\" > /etc/.scriptVar" >> /usr/lib/systemd/system-shutdown/usbIDVariable.sh
+	sudo echo "mount -o remount,ro /" >> /usr/lib/systemd/system-shutdown/usbIDVariable.sh
+
+	sudo chmod +x /usr/lib/systemd/system-shutdown/usbIDVariable.sh
+	exit 0
 fi
-while true
-do
 
-	conteoTotal=$(sudo dmesg | grep usb | grep - | grep -c found)
-	desconectadoTotal=$(sudo dmesg | grep usb | grep - | grep -c disconnect)
+if [ $1 = "-w" ] 
+then
+	sudo tail -f /var/log/log_gl1
+fi
 
-	if [[ $((conteoTotal - desconectadoTotal)) > $conteoReal ]]
+if [[ $(cat /etc/.scriptVar) == 1 ]] #Registros del log
+then
+	if [ $1 = "add" ]
 	then
-		
-			 	 
-		echo "Puerto $(sudo dmesg | grep usb | grep - | grep found | cut -d "-" -f 2 | cut -d ":" -f 1 | tail -1) | $(date) | Conexión" >> /var/log/log_gl1
-		conteoReal=$((conteoReal + 1))
-	fi
-
-	if [[ $((conteoTotal - desconectadoTotal)) < $conteoReal ]]
+		puerto="$(echo "si $2" | cut -d"-" -f2)"
+		echo "Puerto:$puerto | $(date) | Conexión" >> /var/log/log_gl1
+	
+	elif [ $1 = "remove" ]
 	then
-		echo "Puerto $(sudo dmesg | grep usb | grep - | grep disconnect | cut -d "-" -f 2 | cut -d ":" -f 1 | tail -1) | $(date) | Desconexión" >> /var/log/log_gl1
-		conteoReal=$((conteoReal - 1))
+		puerto="$(echo "no $2" | cut -d"-" -f2)"  
+		echo "Puerto:$puerto | $(date) | Desconexión" >> /var/log/log_gl1
 	fi
-done
+else
+	echo "1" > /etc/.scriptVar
+fi
 
 
 
