@@ -1,4 +1,4 @@
-Para poner en funcionamiento el script "usbID", primero se llama con el flag "-a": ./usb.sh -a
+Para poner en funcionamiento el script "usbID", primero se llama con el flag "-a": sudo ./usb.sh -a
 Para ver el log en tiempo real usar el flag -w
 El nombre del log es "log_gl1" y su ubicación es "/var/log/log_gl1"
 Al usar el flag "-a" se crea la regla udevs(60-scriptusbID.rules) necesaria para el funcionamiento del script y además se crea un script en "/usr/lib/systemd/system-shutdown/".
